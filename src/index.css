@@ -1,0 +1,15 @@
+﻿@import "tailwindcss";
+
+/* Estilos base para que la app ocupe toda la pantalla correctamente */
+@layer base {
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-gray-100 text-gray-900;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+}
