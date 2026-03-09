@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc && vite build && npm run copy-to-back",
+    "copy-to-back": "npx shx rm -rf ../../nest/Kiosco-Tickets-Quiniela/client && npx shx cp -r dist ../../nest/Kiosco-Tickets-Quiniela/client",
     "lint": "eslint .",
     "preview": "vite preview"
   },
