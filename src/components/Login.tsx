@@ -65,11 +65,7 @@ const Login = ({ onLogin }: LoginProps) => {
           </button>
         </form>
 
-        <div className="mt-6 text-xs text-gray-500">
-          <p className="font-semibold">Credenciales válidas:</p>
-          <p>kiosco / kiosco123 (acceso total)</p>
-          <p>agencia / agencia321 (solo reportes)</p>
-        </div>
+
       </div>
     </div>
   );

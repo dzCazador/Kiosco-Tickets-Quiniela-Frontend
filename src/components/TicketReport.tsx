@@ -6,9 +6,20 @@ type TicketReportProps = {
   role: 'kiosco' | 'agencia';
 };
 
+type Ticket = {
+  id: number;
+  date: string;
+  machine?: { name: string };
+  net_amount: number;
+  gross_amount: number;
+  prizes_amount: number;
+  telequino_amount: number;
+  image_url?: string;
+};
+
 const TicketReport = ({ role }: TicketReportProps) => {
   const [range, setRange] = useState({ from: '', to: '' });
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -17,15 +28,35 @@ const TicketReport = ({ role }: TicketReportProps) => {
       setLoading(true);
       const res = await axios.get(`/api/tickets?from=${range.from}&to=${range.to}`);
       setData(res.data);
-    } catch (error) {
+    } catch {
       alert('Error al cargar reporte');
     } finally {
       setLoading(false);
     }
   };
 
+  const parseTicketDate = (dateString: string | null | undefined): Date | null => {
+    if (!dateString) return null;
+
+    const trimmed = dateString.trim();
+    const isoMatch = /^([0-9]{4})[-/](\d{2})[-/](\d{2})(?:[ T].*)?$/.exec(trimmed);
+    if (isoMatch) {
+      return new Date(`${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}T00:00:00`);
+    }
+
+    const dmyMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmed);
+    if (dmyMatch) {
+      return new Date(`${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}T00:00:00`);
+    }
+
+    const normalized = trimmed.replace(/\s+/g, 'T');
+    const candidate = new Date(normalized);
+    return isNaN(candidate.getTime()) ? null : candidate;
+  };
+
   const isDeletable = (dateString: string) => {
-    const ticketDate = new Date(dateString + 'T00:00:00');
+    const ticketDate = parseTicketDate(dateString);
+    if (!ticketDate) return false;
     const today = new Date();
     const todayUTC = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const diffMs = todayUTC.getTime() - ticketDate.getTime();
@@ -39,7 +70,7 @@ const TicketReport = ({ role }: TicketReportProps) => {
       setDeletingId(id);
       await axios.delete(`/api/tickets/${id}`);
       setData(prev => prev.filter(item => item.id !== id));
-    } catch (error) {
+    } catch {
       alert('No se pudo eliminar el registro');
     } finally {
       setDeletingId(null);
@@ -56,6 +87,22 @@ const TicketReport = ({ role }: TicketReportProps) => {
     },
     { net: 0, gross: 0, prizes: 0, telequino: 0 }
   );
+
+  const handleDownload = async () => {
+    try {
+      const response = await axios.get(`/api/tickets/package?from=${range.from}&to=${range.to}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'tickets_package.zip');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('Error al descargar el paquete');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -100,12 +147,14 @@ const TicketReport = ({ role }: TicketReportProps) => {
             {data.length === 0 ? (
               <tr><td colSpan={4} className="p-10 text-center text-gray-400 font-medium">No hay registros para mostrar</td></tr>
             ) : (
-              data.map((t: any) => {
+              data.map((t: Ticket) => {
                 const canDelete = role === 'kiosco' && isDeletable(t.date);
+                const ticketDate = parseTicketDate(t.date);
+                const displayDate = ticketDate ? ticketDate.toLocaleDateString('es-AR') : t.date || 'Sin fecha';
 
                 return (
                   <tr key={t.id} className="hover:bg-blue-50/50 transition-colors">
-                    <td className="p-4 font-medium">{new Date(t.date + 'T00:00:00').toLocaleDateString('es-AR')}</td>
+                    <td className="p-4 font-medium">{displayDate}</td>
                     <td className="p-4 text-gray-600">{t.machine?.name || 'N/A'}</td>
                     <td className="p-4 text-right">
                       <div className="font-bold text-blue-600">
@@ -118,7 +167,7 @@ const TicketReport = ({ role }: TicketReportProps) => {
                         Premios: ${Number(t.prizes_amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                       </div>
                       <div className="text-xs text-gray-500">
-                        Telequino: ${Number(t.telequino_amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        TeleBingo: ${Number(t.telequino_amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                       </div>
                     </td>
                     <td className="p-4 text-center space-y-1">
@@ -165,7 +214,7 @@ const TicketReport = ({ role }: TicketReportProps) => {
                     Premios: ${totals.prizes.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </div>
                   <div className="text-xs text-gray-500">
-                    Telequino: ${totals.telequino.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    Telebingo: ${totals.telequino.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </div>
                 </td>
                 <td />
@@ -174,6 +223,17 @@ const TicketReport = ({ role }: TicketReportProps) => {
           )}
         </table>
       </div>
+
+      {data.length > 0 && (
+        <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex justify-center">
+          <button
+            onClick={handleDownload}
+            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Descargar Paquete Comprimido
+          </button>
+        </div>
+      )}
     </div>
   );
 };

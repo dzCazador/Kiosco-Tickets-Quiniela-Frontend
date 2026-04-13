@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { UserRole } from './components/Login';
 import Login from './components/Login';
-import TicketForm from './components/TicketForm';
+import TicketDuoForm from './components/TicketDuoForm';
 import TicketReport from './components/TicketReport';
 import { LayoutDashboard, FilePlus, Ticket, LogOut } from 'lucide-react';
 
@@ -72,7 +72,7 @@ function App() {
         <div className="transition-all duration-300">
           {currentTab === 'form' ? (
             <div className="animate-in fade-in duration-500">
-              <TicketForm />
+              <TicketDuoForm />
             </div>
           ) : (
             <div className="animate-in fade-in duration-500">

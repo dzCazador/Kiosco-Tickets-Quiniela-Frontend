@@ -100,8 +100,7 @@ const TicketForm = () => {
   useEffect(() => {
     const bruto = parseFloat(formData.gross_amount) || 0;
     const premios = parseFloat(formData.prizes_amount) || 0;
-    const telequino = parseFloat(formData.telequino_amount) || 0;
-    const sugerido = bruto - premios + (telequino / 2);
+    const sugerido = bruto - premios ;
     setFormData(prev => ({ ...prev, net_amount: sugerido.toFixed(2) }));
   }, [formData.gross_amount, formData.prizes_amount, formData.telequino_amount]);
 
